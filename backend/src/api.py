@@ -53,6 +53,7 @@ def get_drinks():
 @app.route('/drinks-detail', methods = ['GET'])
 '''
 @requires_auth('get:drinks_details')
+@requires_auth('get:drinks-detail')
 def drink_details():
     try:
         drinks = Drink.query.order_by(Drink.id).all()
@@ -80,18 +81,18 @@ def drink_details():
 @requires_auth('post:drinks')
 def create_drinks():
     body = request.get_json()
-    recipe_data = body['recipe']
+    recipe_data = body.get('recipe', None)
     recipe = json.dumps(recipe_data)
     try:
         new_drink = Drink(
-            title = body['req_title'],
+            title = body.get('title', None),
             recipe = recipe
         )
         new_drink.insert()
         return jsonify(
             {
                 'success': True,
-                'drinks': new_drink
+                'drinks': [new_drink]
             }
         )
     except:
@@ -127,7 +128,7 @@ def patch_drink(id):
         return jsonify(
             {
                 'success': True,
-                'drinks': drinks.long()
+                'drinks': [drinks.long()]
             }
         )
     except:
@@ -209,8 +210,8 @@ def auth_error(error):
     return jsonify(
         {
             'success': False,
-            'error': error.code,
-            'message': error.description
+            'error': error.error,
+            'message': error.status_code,
         }
     )
 
@@ -222,7 +223,7 @@ def unauthorized(error):
             'error': 401,
             'message': 'unathorized'
         }
-    )
+    ), 401
 @app.errorhandler(400)
 def bad_request(error):
     return jsonify(
@@ -231,7 +232,7 @@ def bad_request(error):
             'error': 400,
             'message': 'bad request'
         }
-    )
+    ), 400
 @app.errorhandler(500)
 def internal_sever_error(error):
     return jsonify(
@@ -240,7 +241,7 @@ def internal_sever_error(error):
             'error': 500,
             'message': 'internal sever error'
         }
-    )
+    ), 500
     
 if __name__ == '__main__':
     app.run(host = '127.0.0.1', port = 5000)
