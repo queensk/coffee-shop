@@ -7,7 +7,7 @@ from urllib.request import urlopen
 
 
 AUTH0_DOMAIN = environ.get('dev-l12ir5vq.us.auth0.com')
-ALGORITHMS = environ.get(['RS256'])
+ALGORITHMS = environ.get('RS256')
 API_AUDIENCE = environ.get('Coffee Shop')
 
 ## AuthError Exception
