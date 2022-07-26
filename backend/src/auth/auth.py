@@ -48,14 +48,7 @@ def get_token_auth_header():
                 'description': 'Bearer header is missing'
             }, 401
         )
-    if len(parts) == 1:
-        raise AuthError(
-            {
-                'code': 'invalid header',
-                'description': 'Token not found'
-            }, 401
-        )
-    if len(parts) > 0:
+    if len(parts) != 2:
         raise AuthError(
             {
                 'code': 'invalid header',
@@ -107,18 +100,20 @@ def check_permissions(permission, payload):
     !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
 '''
 def verify_decode_jwt(token):
-    jsonurl = urlopen((f'https://{AUTH0_DOMAIN}/.well-known/jwks.json'))
+
+    jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
     jwks = json.loads(jsonurl.read())
+    
     unverified_header = jwt.get_unverified_header(token)
     rsa_key = {}
     if 'kid' not in unverified_header:
-        raise(
+        raise AuthError(
             {
                 'code': 'invlaid header',
                 'description': 'Authorization malformed'
             }, 401
         )
-    for key in jwks:
+    for key in jwks['keys']:
         if key['kid'] == unverified_header['kid']:
             rsa_key = {
                 'kty': key['kty'],
@@ -127,43 +122,44 @@ def verify_decode_jwt(token):
                 'n': key['n'],
                 'e': key['e']
             }
-        if rsa_key:
-            try:
-                payload = jwt.decode(
-                    token,
-                    rsa_key,
-                    algorithms = ALGORITHMS,
-                    audience = API_AUDIENCE,
-                    issuer = f'https://' + AUTH0_DOMAIN + '/'
-                )
-                return payload
-            except jwt.ExpiredSignatureError:
-                raise AuthError(
-                    {
-                        'code': 'token expired',
-                        'description': 'token expired'
-                    }, 401
-                )
-            except jwt.JWTClaimsError:
-                raise AuthError(
-                    {
-                        'code': 'invlaid claim',
-                        'description': 'incorect claim, chech audience and issuer'
-                    }
-                )
-            except Exception:
-                raise AuthError(
-                    {
-                        'code': 'invalid header',
-                        'description': 'unalbel to parse authentication tokens'
-                    }, 400
-                )
-        raise AuthError(
-            {
-                'code': 'invalid header',
-                'description': 'unable to find appropriate key'
-            }, 400
-        )
+            break
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms = ALGORITHMS,
+                audience = API_AUDIENCE,
+                issuer = f'https://' + AUTH0_DOMAIN + '/'
+            )
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise AuthError(
+                {
+                    'code': 'token expired',
+                    'description': 'token expired'
+                }, 401
+            )
+        except jwt.JWTClaimsError:
+            raise AuthError(
+                {
+                    'code': 'invlaid claim',
+                    'description': 'incorect claim, chech audience and issuer'
+                }, 401
+            )
+        except Exception:
+            raise AuthError(
+                {
+                    'code': 'invalid header',
+                    'description': 'unalbel to parse authentication tokens'
+                }, 400
+            )
+    raise AuthError(
+        {
+            'code': 'invalid header',
+            'description': 'unable to find appropriate key'
+        }, 400
+    )
 '''
 @TODO implement @requires_auth(permission) decorator method
     @INPUTS
@@ -178,13 +174,9 @@ def requires_auth(permission=''):
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            try:
-                token = get_token_auth_header()
-                payload = verify_decode_jwt(token)
-                check_permissions(permission, payload)
-                return f(payload, *args, **kwargs)
-            except:
-                abort(401)
-
+            token = get_token_auth_header()
+            payload = verify_decode_jwt(token)
+            check_permissions(permission, payload)
+            return f(payload, *args, **kwargs)    
         return wrapper
     return requires_auth_decorator

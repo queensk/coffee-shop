@@ -4,8 +4,8 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
-from database.models import db_drop_and_create_all, setup_db, Drink
-from auth.auth import AuthError, requires_auth
+from .database.models import db_drop_and_create_all, setup_db, Drink #for python version 3.10.5 use from database.models import db_drop_and_create_all, setup_db, Drink
+from .auth.auth import AuthError, requires_auth #for python version 3.10.5 use from auth.auth import AuthError, requires_auth
 
 app = Flask(__name__)
 setup_db(app)
@@ -17,7 +17,7 @@ CORS(app)
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 !! Running this funciton will add one
 '''
-# db_drop_and_create_all()
+db_drop_and_create_all()
 
 # ROUTES
 '''
@@ -33,7 +33,7 @@ def get_drinks():
     try:
         drinks = Drink.query.order_by(Drink.id).all()  
         formanted_drinks = [drink.short() for drink in drinks]
-    
+
         return jsonify(
             {
                 'success': True,
@@ -50,9 +50,8 @@ def get_drinks():
         it should contain the drink.long() data representation
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
-@app.route('/drinks-detail', methods = ['GET'])
 '''
-@requires_auth('get:drinks_details')
+@app.route('/drinks-detail', methods = ['GET'])
 @requires_auth('get:drinks-detail')
 def drink_details():
     try:
@@ -64,9 +63,10 @@ def drink_details():
                 'success': True,
                 'drinks': formated_drinks,
             }
-        )
+        ), 200
     except:
         abort(404)
+
 
 '''
 @TODO implement endpoint
@@ -94,7 +94,7 @@ def create_drinks():
                 'success': True,
                 'drinks': [new_drink]
             }
-        )
+        ), 200
     except:
         abort(422)
 
@@ -114,7 +114,7 @@ def create_drinks():
 @app.route('/drinks/<int:id>', methods = ['PATCH'])
 @requires_auth('patch:drinks')
 def patch_drink(id):
-    drinks = Drink.query.get(Drink.id == id)
+    drinks = Drink.query.get(Drink.id == id).one_or_none()
     if drinks is None:
         abort(404)
     body = request.get_json()
@@ -130,7 +130,7 @@ def patch_drink(id):
                 'success': True,
                 'drinks': [drinks.long()]
             }
-        )
+        ), 200
     except:
         abort(422)
 '''
@@ -157,7 +157,7 @@ def delete_drinks(id):
                 'success': True,
                 'delete': id
             }
-    )
+    ), 200
     except:
         abort(400)
 
@@ -213,7 +213,7 @@ def auth_error(error):
             'error': error.error,
             'message': error.status_code,
         }
-    )
+    ), error.status_code
 
 @app.errorhandler(401)
 def unauthorized(error):
@@ -244,5 +244,5 @@ def internal_sever_error(error):
     ), 500
     
 if __name__ == '__main__':
-    app.run(host = '127.0.0.1', port = 5000)
-    app.run(debug = True)
+    app.run()
+    
