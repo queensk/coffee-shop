@@ -4,10 +4,14 @@ from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
+import export
 
 
+# export AUTH0_DOMAIN='dev-l12ir5vq.us.auth0.com'
+# export ALGORITHMS='RS256'
+# export API_AUDIENCE='Coffee Shop'
 AUTH0_DOMAIN = environ.get('dev-l12ir5vq.us.auth0.com')
-ALGORITHMS = environ.get('RS256')
+ALGORITHMS = [environ.get('RS256')]
 API_AUDIENCE = environ.get('Coffee Shop')
 
 ## AuthError Exception
@@ -40,7 +44,7 @@ def get_token_auth_header():
                 'description': 'Authorixation header is required'
             }, 401
         )
-    parts = auth.split(' ')
+    parts = auth.split()
     if parts[0].lower() != 'bearer':
         raise AuthError(
             {
@@ -48,11 +52,18 @@ def get_token_auth_header():
                 'description': 'Bearer header is missing'
             }, 401
         )
-    if len(parts) != 2:
+    elif len(parts) == 1:
         raise AuthError(
             {
                 'code': 'invalid header',
                 'description': 'Authorization header must be a bearer token'
+            }, 401
+        )
+    elif len(parts) > 2:
+        raise AuthError(
+            {
+                'code': 'invalid_header',
+                'description': 'Authorization header musht be bearer token'
             }, 401
         )
     token = parts[1]

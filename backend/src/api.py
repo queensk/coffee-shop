@@ -4,8 +4,8 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
-from .database.models import db_drop_and_create_all, setup_db, Drink #for python version 3.10.5 use from database.models import db_drop_and_create_all, setup_db, Drink
-from .auth.auth import AuthError, requires_auth #for python version 3.10.5 use from auth.auth import AuthError, requires_auth
+from database.models import db_drop_and_create_all, setup_db, Drink #for python version 3.10.5 use from database.models import db_drop_and_create_all, setup_db, Drink
+from auth.auth import AuthError, requires_auth #for python version 3.10.5 use from auth.auth import AuthError, requires_auth
 
 app = Flask(__name__)
 setup_db(app)
@@ -38,8 +38,8 @@ def get_drinks():
             {
                 'success': True,
                 'drinks': formanted_drinks
-            }, 200
-        )
+            }
+        ), 200
     except:
         abort(404)
 
@@ -198,8 +198,8 @@ def not_found(error):
             'success': False,
             'error': 404,
             'message': 'recoure not found'
-        }, 404
-    )
+        }
+    ), 404
 
 '''
 @TODO implement error handler for AuthError
