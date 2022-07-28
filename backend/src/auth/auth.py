@@ -4,12 +4,8 @@ from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
-import export
 
 
-# export AUTH0_DOMAIN='dev-l12ir5vq.us.auth0.com'
-# export ALGORITHMS='RS256'
-# export API_AUDIENCE='Coffee Shop'
 AUTH0_DOMAIN = environ.get('dev-l12ir5vq.us.auth0.com')
 ALGORITHMS = [environ.get('RS256')]
 API_AUDIENCE = environ.get('Coffee Shop')
@@ -86,14 +82,14 @@ def check_permissions(permission, payload):
             {
                 'code': 'invalid payload',
                 'descriptions': 'missing permission'
-            }, 401
+            }, 403
         )
     if permission not in payload:
         raise AuthError(
             {
                 'code': 'payload error',
                 'descriptions': 'missing permission'
-            }, 401
+            }, 403
         )
     return True
 
@@ -190,7 +186,7 @@ def requires_auth(permission=''):
                 payload = verify_decode_jwt(token)
             except:
                 abort(401)
-                
+
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)    
         return wrapper

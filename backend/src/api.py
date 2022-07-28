@@ -4,8 +4,8 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
-from database.models import db_drop_and_create_all, setup_db, Drink #for python version 3.10.5 use from database.models import db_drop_and_create_all, setup_db, Drink
-from auth.auth import AuthError, requires_auth #for python version 3.10.5 use from auth.auth import AuthError, requires_auth
+from .database.models import db_drop_and_create_all, setup_db, Drink #for python version 3.10.5 use from database.models import db_drop_and_create_all, setup_db, Drink
+from .auth.auth import AuthError, requires_auth #for python version 3.10.5 use from auth.auth import AuthError, requires_auth
 
 app = Flask(__name__)
 setup_db(app)
@@ -92,7 +92,7 @@ def create_drinks():
         return jsonify(
             {
                 'success': True,
-                'drinks': [new_drink]
+                'drinks': [new_drink.long()]
             }
         ), 200
     except:
@@ -114,15 +114,16 @@ def create_drinks():
 @app.route('/drinks/<int:id>', methods = ['PATCH'])
 @requires_auth('patch:drinks')
 def patch_drink(id):
-    drinks = Drink.query.get(Drink.id == id).one_or_none()
+    drinks = Drink.query.get(id)
     if drinks is None:
         abort(404)
     body = request.get_json()
     try:
         if 'title' in body:
             drinks.title = body['title']
-        if 'recipe' in body:
+        elif 'recipe' in body:
             drinks.recipe = json.dumps(body['recipe'])
+            
         drinks.update()
         
         return jsonify(
@@ -233,6 +234,15 @@ def bad_request(error):
             'message': 'bad request'
         }
     ), 400
+@app.errorhandler(403)
+def bad_request(error):
+    return jsonify(
+        {
+            'success': False,
+            'error': 403,
+            'message': 'permission is not present'
+        }
+    ), 403
 @app.errorhandler(500)
 def internal_sever_error(error):
     return jsonify(
