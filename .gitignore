@@ -12,3 +12,16 @@ test.db
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
